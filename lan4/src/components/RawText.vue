@@ -1,11 +1,6 @@
 <template>
   <div id="RawText">
-    <textarea v-model="text"></textarea>
-    <v-btn id="import" text tile icon @click="importText" >
-      <v-icon>
-        mdi-arrow-down
-      </v-icon>
-    </v-btn>
+    <textarea v-model="text" @dblclick="transformText" v-if="file"></textarea>
   </div>
 </template>
 
@@ -17,27 +12,104 @@ export default {
 
   data: () => ({
     text: "",
+    file: null,
+    dictionary: {
+      concepts: [],
+      relations: [],
+    }
   }),
 
   props: {
+    mode: {
+      required: true,
+    }
   },
 
   methods: {
     importText() {
       EventBus.$emit('importText', this.text)
     },
+    async openFile(file) {
+      const data = await new Promise(resolve => {
+        window.electronAPI.requestFileData(file)
+        window.electronAPI.response('file-data-response', resolve)
+      });
+      if (data) {
+        this.text = data
+        this.file = file
+      }
+      else {
+        this.file = null
+        this.text = ""
+      }
+    },
+    transformText() {
+      if (this.mode == 'concept') {
+        this.makeConcept()
+      }
+      else if (this.mode == 'relation') {
+        this.makeRelation()
+      }
+    },
+    makeConcept() {
+      const selectedText = this.getSelectedText();
+
+      const escapedText = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regexPattern = new RegExp(escapedText, 'g');
+      const newText = this.text.replace(regexPattern, `${selectedText}`);
+
+      this.text = newText;
+
+      if (!this.dictionary.concepts.includes(selectedText)) {
+        this.dictionary.concepts.push(selectedText)
+      }
+      EventBus.$emit('updateDictionary', this.dictionary)
+    },
+    makeRelation() {
+      const selectedText = this.getSelectedText();
+
+      const escapedText = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regexPattern = new RegExp(escapedText, 'g');
+      const newText = this.text.replace(regexPattern, `${selectedText}`);
+
+      this.text = newText;
+
+      if (!this.dictionary.relations.includes(selectedText)) {
+        this.dictionary.relations.push(selectedText)
+      }
+      EventBus.$emit('updateDictionary', this.dictionary)
+    },
+    getSelectedText() {
+      const textarea = this.$el.querySelector('textarea');
+      return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+    },
+    saveText() {
+      if (this.file) {
+        let newNodes = []
+        let concepts = (this.text.match(/(?<=\[)[^\]]+(?=\])/g) || [])
+
+        for (let i=0; i<concepts.length; i++) {
+          newNodes.push({
+            id : Math.floor(Math.random()*100000),
+            label: concepts[i],
+          })
+        }
+
+        EventBus.$emit('updateNodes', newNodes)
+        window.electronAPI.requestSaveFile(this.file, this.text)
+      }
+    }
   },
 
   computed: {
   },
 
   async created() {
-    const data = await new Promise(resolve => {
-      window.electronAPI.getTextData()
-      window.electronAPI.response('get-text-data-response', resolve)
-    })
+    EventBus.$on('fileopened', this.openFile);
+  },
 
-    this.text = data
+  watch : {
+    text : 'saveText',
   },
 }
 </script>
@@ -47,9 +119,8 @@ export default {
 #RawText {
   height: calc(100%);
   width: calc(100%);
-  padding: 10px;
-  padding-bottom: 5px;
   position: relative;
+  border-right: 1px solid var(--v-secondary-base);
 }
 textarea {
   height: 100%;
@@ -57,14 +128,7 @@ textarea {
   outline: none;
   color: white;
   resize: none;
-  background: #222;
-  padding: 5px;
-}
-#import {
-  background: #222;
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
+  background: #191919;
+  padding: 5px 10px 5px 10px;
 }
 </style>

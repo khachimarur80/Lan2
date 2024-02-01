@@ -93,7 +93,7 @@
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("const { contextBridge, ipcRenderer } = __webpack_require__(/*! electron */ \"electron\");\n\ncontextBridge.exposeInMainWorld('electronAPI', {\n    response: (channel, listener) => {\n        const onceListener = (event, ...args) => {\n          ipcRenderer.removeListener(channel, onceListener);\n          listener(...args);\n        };\n        \n        ipcRenderer.on(channel, onceListener);\n    },\n    saveGraphData: (data) => ipcRenderer.send('save-graph-data', data),\n    saveTextData: (data) => ipcRenderer.send('save-text-data', data),\n    saveCodeData: (data) => ipcRenderer.send('save-code-data', data),\n\n    getGraphData: (data) => ipcRenderer.send('get-graph-data', data),\n    getTextData: (data) => ipcRenderer.send('get-text-data', data),\n    getCodeData: (data) => ipcRenderer.send('get-code-data', data),\n})\n\n//# sourceURL=webpack:///./src/preload.js?");
+eval("const { contextBridge, ipcRenderer } = __webpack_require__(/*! electron */ \"electron\");\n\ncontextBridge.exposeInMainWorld('electronAPI', {\n    response: (channel, listener) => {\n        const onceListener = (event, ...args) => {\n          ipcRenderer.removeListener(channel, onceListener);\n          listener(...args);\n        };\n        \n        ipcRenderer.on(channel, onceListener);\n    },\n    saveGraphData: (data) => ipcRenderer.send('save-graph-data', data),\n    saveCodeData: (data) => ipcRenderer.send('save-code-data', data),\n\n    getGraphData: (data) => ipcRenderer.send('get-graph-data', data),\n    getCodeData: (data) => ipcRenderer.send('get-code-data', data),\n\n    getFolderStructure: (target) => ipcRenderer.send('get-folder-structure', target),\n    requestSaveFile: (fileName, fileData) => ipcRenderer.send('request-save-file', fileName, fileData),\n    requestFileData: (fileName) => ipcRenderer.send('request-file-data', fileName),\n})\n\n//# sourceURL=webpack:///./src/preload.js?");
 
 /***/ }),
 
@@ -104,7 +104,7 @@ eval("const { contextBridge, ipcRenderer } = __webpack_require__(/*! electron */
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = __webpack_require__(/*! /Users/Kei/Desktop/lan4/src/preload.js */\"./src/preload.js\");\n\n\n//# sourceURL=webpack:///multi_./src/preload.js?");
+eval("module.exports = __webpack_require__(/*! /Users/Kei/Desktop/Github/Lan2/lan4/src/preload.js */\"./src/preload.js\");\n\n\n//# sourceURL=webpack:///multi_./src/preload.js?");
 
 /***/ }),
 

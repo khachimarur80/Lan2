@@ -233,27 +233,14 @@ app.on('ready', async () => {
   ipcMain.on('save-graph-data', (event, newData) => {
     const filePath = path.join(__dirname, '../src/assets', '.data.json');
     fs.readFile(filePath, 'utf-8', (err, data) => {
-      let message = JSON.parse(data);
-      message.graph = newData
-      console.log(JSON.stringify(message))
-      fs.writeFile(filePath, JSON.stringify(message), ()=>{});
-    });
-  });
-
-  ipcMain.on('get-text-data', () => {
-    const filePath = path.join(__dirname, '../src/assets', '.data.json');
-    fs.readFile(filePath, 'utf-8', (err, data) => {
-      const message = JSON.parse(data);
-      win.webContents.send('get-text-data-response', message.text);
-    });
-  });
-
-  ipcMain.on('save-text-data', (event, newData) => {
-    const filePath = path.join(__dirname, '../src/assets', '.data.json');
-    fs.readFile(filePath, 'utf-8', (err, data) => {
-      let message = JSON.parse(data);
-      message.text = newData
-      fs.writeFile(filePath, JSON.stringify(message), ()=>{});
+      try {
+        let message = JSON.parse(data);
+        message.graph = newData
+        fs.writeFile(filePath, JSON.stringify(message), ()=>{});
+      }
+      catch {
+        console.log(data)
+      }
     });
   });
 
@@ -352,8 +339,7 @@ app.on('ready', async () => {
     });
   });
 
-  ipcMain.on('get-folder-structure', (event) => {
-    let target = path.join(currentLan.location, currentLan.name)
+  ipcMain.on('get-folder-structure', (event, target) => {
     win.webContents.send('get-folder-structure-response', generateTreeData(target))
   })
 
