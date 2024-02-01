@@ -39,7 +39,7 @@ export default {
         this.file = file
       }
       else {
-        this.file = null
+        this.file = file
         this.text = ""
       }
     },

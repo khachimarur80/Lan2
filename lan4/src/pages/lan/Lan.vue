@@ -42,7 +42,7 @@
               <CodeEditor :dictionary="dictionary"/>
             </div>
             <div class="vertical-half">
-              <vDiagram :graph="graph"/>
+              <vDiagram :treeNode="graph"/>
             </div>
           </div>
         </div>

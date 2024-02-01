@@ -81,8 +81,6 @@ export default {
                               
           sel.removeAllRanges()
 
-          console.log(pos.pos)
-
           const range = this.setCursorPosition(this.$refs.text, document.createRange(), {
             pos: pos.pos + predictionLength,
             done: false,
@@ -155,7 +153,7 @@ export default {
       return matchingConcepts.concat(matchingRelations)
     },
     saveCode() {
-      this.code = this.$refs.text.textContent
+      this.code = this.$refs.text.innerText
       window.electronAPI.saveCodeData(this.code)
 
       const selection = window.getSelection();
@@ -177,6 +175,7 @@ export default {
       }
     },
     updateGraph() {
+      console.log(this.graph)
       EventBus.$emit('updateGraph', this.graph)
     },
     getNodeByName(name) {
@@ -189,6 +188,7 @@ export default {
       let sentences = this.code.split('\n')
 
       for (let i=0; i<sentences.length; i++) {
+        console.log(sentences[i])
         let sentencia = sentences[i]
         let hayNodo = /\[.*\]/.test(sentencia);
         let hayRelacion = /-.*-/.test(sentencia);

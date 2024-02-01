@@ -9,13 +9,11 @@
       @mousemove.right="dragging"
       @mouseup.right="stopDragging"
       >
-
     </canvas>
   </div>
 </template>
 
 <script>
-import seedrandom from 'seedrandom';
 
 class Node {
   constructor() {
@@ -23,13 +21,15 @@ class Node {
     this.y = null
     this.text = ""
     this.id = Math.floor(Math.random() * 1000000)
+    this.adjacents = []
+    this.adjacentCount = 0
   }
 }
 
 export default {
   name: 'DiagramView',
   props: {
-    graph: {
+    treeNode: {
       type: Object,
     }
   },
@@ -45,8 +45,8 @@ export default {
     currentTileSize: 0,
     canvas: {
       ctx: null,
-      height: 300,
-      width: 300,
+      height: 600,
+      width: 800,
     },
     isDragging: false,
     dragStart: {
@@ -57,7 +57,6 @@ export default {
     ],
     edges: [
     ],
-    seed: 0,
   }),
   methods : {
     transformCoord(x, y) {
@@ -95,7 +94,7 @@ export default {
     },
     generateTile(x, y, tileSize) {
       this.canvas.ctx.fillStyle = "transparent";
-      this.canvas.ctx.strokeStyle = "#333";
+      this.canvas.ctx.strokeStyle = "#f00";
       this.canvas.ctx.lineWidth = 0.1;
 
       const halfSize = tileSize / 2;
@@ -124,21 +123,24 @@ export default {
     },
     generateNodes() {
       for (let i=0; i<this.nodes.length; i++) {
-        this.canvas.ctx.fillStyle = "red";
-        this.canvas.ctx.strokeStyle = "red";
-        this.canvas.ctx.lineWidth = 2;
+        this.canvas.ctx.fillStyle = "#888";
+        this.canvas.ctx.strokeStyle = "#888";
+        this.canvas.ctx.lineWidth = 1;
+
+        let width = (this.nodes[i].text.length * Math.floor(6*(this.zoom/100))) + 10
+        let tiles = Math.ceil(width/(this.baseTileSize*this.zoom/100))
 
         this.canvas.ctx.strokeRect(
-          (this.nodes[i].x - .5) * this.baseTileSize * this.zoom/100 + this.canvas.width/2 + this.offset.x + 1,
+          (this.nodes[i].x - tiles*.5) * this.baseTileSize * this.zoom/100 + this.canvas.width/2 + this.offset.x + 1,
           -(this.nodes[i].y+.5) * this.baseTileSize * this.zoom/100 + this.canvas.height/2 + this.offset.y + 1,
-          this.baseTileSize * this.zoom/100 - 1,
+          (this.baseTileSize * this.zoom/100 - 1)*tiles,
           this.baseTileSize * this.zoom/100 - 1
         );
 
         this.canvas.ctx.fillStyle = "white";
         this.canvas.ctx.textAlign = "center";
         this.canvas.ctx.textBaseline = "middle";
-        this.canvas.ctx.font = "12px Arial";
+        this.canvas.ctx.font = Math.floor(12*(this.zoom/100))+"px Arial";
 
         this.canvas.ctx.fillText(
             this.nodes[i].text,
@@ -148,8 +150,9 @@ export default {
       }
     },
     generateEdges() {
-      for (let i=0; i<this.edges.length; i++) {
+      this.edges.map(edge => edge.sort((a, b) => a.x - b.x).sort((a,b) => b.y - a.y))
 
+      for (let i=0; i<this.edges.length; i++) {
         let transformationOrigin = {
           x: 0,
           y: 0, 
@@ -162,28 +165,28 @@ export default {
 
         if (this.edges[i][0].x < this.edges[i][1].x) {
           if (this.edges[i][0].y == this.edges[i][1].y) {
-            transformationOrigin.x = .5
-            transformationDestin.x = -.5
+            transformationOrigin.x = .5*this.edges[i][0].width
+            transformationDestin.x = -.5*this.edges[i][1].width
           }
           else {
-            transformationOrigin.x = 0
-            transformationDestin.x = -.5 
+            transformationOrigin.x = 0*this.edges[i][0].width
+            transformationDestin.x = -.5 *this.edges[i][1].width
           }
         }
 
         else if (this.edges[i][0].x > this.edges[i][1].x) {
           if (this.edges[i][0].y == this.edges[i][1].y) {
-            transformationOrigin.x = -.5
+            transformationOrigin.x = -.5*this.edges[i][0].width
             transformationDestin.x = .5
           }
           else {
-            transformationOrigin.x = 0 
-            transformationDestin.x = .5
+            transformationOrigin.x = 0 *this.edges[i][0].width
+            transformationDestin.x = .5*this.edges[i][1].width
           }
         }
 
         else {
-          transformationDestin.y = 0
+          transformationDestin.y = 0*this.edges[i][1].width
         }
 
         if (this.edges[i][0].y > this.edges[i][1].y) {
@@ -222,7 +225,7 @@ export default {
             this.edges[i][1].y - 1 + transformationDestin.y,
           )
         )
-        this.canvas.ctx.strokeStyle = 'blue';
+        this.canvas.ctx.strokeStyle = '#333';
         this.canvas.ctx.lineWidth = 2;
         this.canvas.ctx.stroke();
 
@@ -239,11 +242,9 @@ export default {
             this.edges[i][1].y - 1 + transformationDestin.y,
           )
         )
-        this.canvas.ctx.strokeStyle = 'blue';
+        this.canvas.ctx.strokeStyle = '#333';
         this.canvas.ctx.lineWidth = 2;
         this.canvas.ctx.stroke();
-
-
       }
     },
     generateGrid() {
@@ -297,7 +298,8 @@ export default {
       this.canvas.ctx = canvas.getContext("2d")
       this.canvas.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-      this.generateGrid()
+      //this.generateGrid()
+      //this.generateAxis()
       this.generateEdges()
       this.generateNodes()
     },
@@ -311,8 +313,8 @@ export default {
       node.y = y
       this.nodes.push(node)
 
-      this.canvas.ctx.fillStyle = "red";
-      this.canvas.ctx.strokeStyle = "red";
+      this.canvas.ctx.fillStyle = "#333";
+      this.canvas.ctx.strokeStyle = "#333";
       this.canvas.ctx.lineWidth = 1;
 
       this.canvas.ctx.strokeRect(
@@ -320,91 +322,102 @@ export default {
         this.baseTileSize * this.zoom/100 - 1,
         this.baseTileSize * this.zoom/100 - 1
       );
-
+    },
+    incest(node, siblings) {
+      let incestous = []
+      for (let i in siblings) {
+        if (siblings[i] != node) {
+          if (node.adjacents.includes(siblings[i].id)) {
+            incestous.push(siblings[i])
+          }
+        }
+      }
+      return incestous
     },
     positionNodes() {
-      this.edges = []
       this.nodes = []
+      this.edges = []
 
-      const nodes = [...this.graph.nodes]
-      const edges = [...this.graph.edges]
-
-      const rng = seedrandom(this.seed)
-      nodes.forEach(node => {
-        const newNode = new Node()
-        newNode.id = node.id
+      this.treeNode.nodes.forEach((node)=>{
+        let newNode = new Node()
         newNode.text = node.name
-        newNode.x = Math.floor(rng() * 10) - 5
-        newNode.y = Math.floor(rng() * 18) - 9
+        newNode.id = node.id
         this.nodes.push(newNode)
-      });
+      })
+      this.treeNode.edges.forEach((edge)=>{
+        let node1 = this.nodes.filter(node => node.id == edge.from)[0]
+        let node2 = this.nodes.filter(node => node.id == edge.to)[0]
 
-      const k = 1
-      const c = 0.25
-      const iterations = 1000
+        node1.adjacents.push(node2.id)
+        node2.adjacents.push(node1.id)
+        node2.adjacentCount += 1
+        node1.adjacentCount += 1
+      })
 
-      for (let iter = 0; iter < iterations; iter++) {
-        // eslint-disable-next-line no-unused-vars
-        const forces = this.nodes.map(node => ({ x: 0, y: 0 }));
+      let traversingNodes = [... this.nodes].sort((node1, node2) => node1.adjacentCount - node2.adjacentCount)
 
-        this.nodes.forEach((node1, i) => {
-          this.nodes.forEach((node2, j) => {
-            if (i !== j) {
-              const dx = node2.x - node1.x;
-              const dy = node2.y - node1.y;
-              const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-              const forceX = (dx / distance) * k * k / distance;
-              const forceY = (dy / distance) * k * k / distance;
+      let row = 0
+      let col = 0
 
-              forces[i].x -= forceX;
-              forces[i].y -= forceY;
-            }
-          });
-        });
+      function drawSubgraph(node, adjacentNodes, nodes, vm) {
+        traversingNodes = traversingNodes.filter(node => !adjacentNodes.includes(node))
+        let carry = 0
+        let placedNodes = []
 
-        edges.forEach(edge => {
-          const node1 = this.nodes.find(node => node.id === edge.from);
-          const node2 = this.nodes.find(node => node.id === edge.to);
+        for (let i in adjacentNodes) {
+          if (placedNodes.some(node => vm.incest(adjacentNodes[i], adjacentNodes).includes(node))) {
+            carry += 2
+          }
+          adjacentNodes[i].x = node.x + 2 + Math.floor(node.text.length/5) + carry
+          adjacentNodes[i].y = node.y - i*2
 
-          const dx = node2.x - node1.x;
-          const dy = node2.y - node1.y;
-          const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-          const forceX = (dx / distance) * distance * c;
-          const forceY = (dy / distance) * distance * c;
+          placedNodes.push(adjacentNodes[i])
 
-          const index1 = this.nodes.findIndex(node => node.id === edge.from);
-          const index2 = this.nodes.findIndex(node => node.id === edge.to);
+          let childAdjacentNodes = nodes.filter(node => adjacentNodes[i].adjacents.includes(node.id))
+          childAdjacentNodes = childAdjacentNodes.filter(node => traversingNodes.includes(node))
+          childAdjacentNodes = childAdjacentNodes.sort((node1, node2) => node1.adjacentCount - node2.adjacentCount)
+          childAdjacentNodes = childAdjacentNodes.sort((node1, node2) => vm.incest(node2, childAdjacentNodes).length - vm.incest(node1, childAdjacentNodes).length)
 
-          forces[index1].x += forceX;
-          forces[index1].y += forceY;
+          if (childAdjacentNodes.length) {
+            drawSubgraph(adjacentNodes[i], childAdjacentNodes, nodes, vm)
+          }
+        }
+      }
 
-          forces[index2].x -= forceX;
-          forces[index2].y -= forceY;
-        });
+      while (traversingNodes.length) {
+        let currentNode = traversingNodes.pop()
+        currentNode.x = col
+        currentNode.y = row
 
-        this.nodes.forEach((node, i) => {
-          node.x = Math.round(node.x + forces[i].x);
-          node.y = Math.round(node.y + forces[i].y);
-        });
+        let adjacentNodes = this.nodes.filter(node => currentNode.adjacents.includes(node.id))
+        adjacentNodes = adjacentNodes.sort((node1, node2) => node1.adjacentCount - node2.adjacentCount)
+        adjacentNodes = adjacentNodes.sort((node1, node2) => this.incest(node2, adjacentNodes).length - this.incest(node1, adjacentNodes).length)
+
+        drawSubgraph(currentNode, adjacentNodes, this.nodes, this)
       }
 
       const centroid = {
-        x: Math.round(this.nodes.reduce((sum, node) => sum + node.x, 0) / this.nodes.length),
-        y: Math.round(this.nodes.reduce((sum, node) => sum + node.y, 0) / this.nodes.length),
+          x: Math.round(this.nodes.reduce((sum, node) => sum + node.x, 0) / this.nodes.length),
+          y: Math.round(this.nodes.reduce((sum, node) => sum + node.y, 0) / this.nodes.length),
       };
-
       this.nodes.forEach(node => {
         node.x -= centroid.x;
         node.y -= centroid.y;
       });
 
-      edges.forEach(edge => {
+      this.treeNode.edges.forEach(edge => {
         const node1 = this.nodes.find(node => node.id === edge.from);
         const node2 = this.nodes.find(node => node.id === edge.to);
 
+        let width1 = (node1.text.length * Math.floor(6*(this.zoom/100))) + 10
+        let tiles1 = Math.ceil(width1/(this.baseTileSize*this.zoom/100))
+
+        let width2 = (node2.text.length * Math.floor(6*(this.zoom/100))) + 10
+        let tiles2 = Math.ceil(width2/(this.baseTileSize*this.zoom/100))
+
         this.edges.push([
-          { x: node1.x, y: node1.y },
-          { x: node2.x, y: node2.y }
+          { x: node1.x, y: node1.y, width: tiles1 },
+          { x: node2.x, y: node2.y, width: tiles2 },
         ]);
       });
     }
@@ -419,17 +432,7 @@ export default {
     setTimeout(()=>{
       this.generateBoard();
     })
-
-    /*window.addEventListener('resize', () => {
-      let container = document.getElementById('contents');
-
-      this.canvas.height = container.getBoundingClientRect().height;
-      this.canvas.width = container.getBoundingClientRect().width;
-      this.baseTileSize = Math.ceil((this.minTileSize + this.maxTileSize) / 2);
-      this.generateBoard();
-    })*/
   },
-
   watch: {
     zoom() {
       this.generateBoard()
@@ -440,7 +443,7 @@ export default {
       },
       deep: true,
     },
-    graph: {
+    treeNode: {
       handler() {
         this.positionNodes()
         this.generateBoard()
@@ -459,15 +462,5 @@ export default {
   height: 100%;
   width: 100%;
   border-top: 1px solid var(--v-secondary-base);
-}
-#zoom {
-  position: absolute;
-  top: 30px;
-  transform: translateX(-100px);
-}
-#offset {
-  position: absolute;
-  top: 30px;
-  transform: translateX(100px);
 }
 </style>
