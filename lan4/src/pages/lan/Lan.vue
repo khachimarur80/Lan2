@@ -134,6 +134,8 @@ export default {
     },
 
     updateGraph(graph) {
+      this.dictionary.concepts = graph.nodes.map(concept => concept.name)
+      this.dictionary.relations = graph.edges.filter(relation => relation.name!=null).map(relation => relation.name)
       this.graph = graph
     }
   },
