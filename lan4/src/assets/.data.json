@@ -1,1 +1,1 @@
-{"code":"[A]--[B]\n[A]--[C]\n[A]--[D]\n[D]--[E]\n[E]--[F]\n[E]--[A]\n[F]--[C]\n\n"}
+{"code":"func comer(persona, comida, lugar):\nlet [persona] --> [comida]\nset lugar - comida\n\n\nset #nevera tortilla jamon queso\nlet [disponible] --> #nevera\nlet [kei]\n\n\nfunc comer(kei, tortilla, nevera)\n\n\n\n"}

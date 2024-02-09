@@ -1,1 +1,6 @@
-A B C D E F
+func comer(persona, comida, lugar):
+let [persona] --> [comida]
+set lugar - comida
+
+set #comida tortilla
+func comer(kei, tortilla, nevera)

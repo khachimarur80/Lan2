@@ -34,7 +34,7 @@
               <RawText :mode="rawTextMode"/>
             </div>
             <div class="vertical-half">
-              <vDictionary :dictionary="dictionary"/>
+              <vDictionary :dictionary="dictionary" :graph="graph"/>
             </div>
           </div>
           <div class="horizontal-half">
@@ -81,6 +81,7 @@ export default {
     dictionary: {
       concepts: [],
       relations: [],
+      sets: [],
     },
     vault: "/Users/Kei/Desktop/Github/lan2/lan4/src/assets/files",
     rawTextMode: '',
@@ -88,7 +89,11 @@ export default {
 
   methods: {
     updateDictionary(newDictionary) {
-      this.dictionary = newDictionary
+      this.dictionary = {
+        concepts: Array.from(new Set(newDictionary.nodes.map(node => node.name))),
+        relations: Array.from(new Set(newDictionary.edges.map(edge => edge.name))),
+        sets: Array.from(new Set(newDictionary.sets.map(set => set.name))),
+      }
     },
 
     async updateFolderStructure() {
@@ -134,8 +139,9 @@ export default {
     },
 
     updateGraph(graph) {
-      this.dictionary.concepts = graph.nodes.map(concept => concept.name)
-      this.dictionary.relations = graph.edges.filter(relation => relation.name!=null).map(relation => relation.name)
+      this.dictionary.concepts = Array.from(new Set(graph.nodes.map(concept => concept.name)))
+      this.dictionary.relations = Array.from(new Set(graph.edges.filter(relation => relation.name!=null).map(relation => relation.name)))
+      this.dictionary.sets = Array.from(new Set(graph.sets.filter(set => set.name!=null).map(set => set.name)))
       this.graph = graph
     }
   },
@@ -227,5 +233,30 @@ export default {
   }
   .sidebar-contents {
     height: calc(100vh - 50px - 20px);
+  }
+
+  .let {
+    color: var(--v-success-base);
+  }
+  .least {
+    color: var(--v-warning-base);
+  }
+  .all {
+    color: var(--v-warning-base);
+  }
+  .func {
+    color: var(--v-primary-base);
+  }
+  .set {
+    color: var(--v-primary-base);
+  }
+  .and {
+    color: var(--v-error-base);
+  }
+  .or {
+    color: var(--v-error-base);
+  }
+  .not {
+    color: var(--v-error-base);
   }
 </style>

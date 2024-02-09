@@ -300,8 +300,11 @@ export default {
 
       //this.generateGrid()
       //this.generateAxis()
-      this.generateEdges()
-      this.generateNodes()
+      console.log(Array.from(this.treeNode.nodes.map(a=>a.name)))
+      setTimeout(()=>{
+        this.generateEdges()
+        this.generateNodes()
+      }, 100)
     },
     createNode(event) {
       let x = Math.floor((event.x  - this.canvas.width/2 + this.currentTileSize/2) / this.currentTileSize)
@@ -337,6 +340,7 @@ export default {
     positionNodes() {
       this.nodes = []
       this.edges = []
+      this.sets = this.treeNode.sets
 
       this.treeNode.nodes.forEach((node)=>{
         let newNode = new Node()
@@ -345,13 +349,29 @@ export default {
         this.nodes.push(newNode)
       })
       this.treeNode.edges.forEach((edge)=>{
-        let node1 = this.nodes.filter(node => node.id == edge.from)[0]
-        let node2 = this.nodes.filter(node => node.id == edge.to)[0]
+        let node1 = this.nodes.find(node => node.id == edge.from)
+        let node2 = this.nodes.find(node => node.id == edge.to)
+        let set1 = this.sets.find(set => set.id === edge.from);
+        let set2 = this.sets.find(set => set.id === edge.to);
 
-        node1.adjacents.push(node2.id)
-        node2.adjacents.push(node1.id)
-        node2.adjacentCount += 1
-        node1.adjacentCount += 1
+        if (node1 && node2) {
+          node1.adjacents.push(node2.id)
+          node1.adjacentCount += 1
+        }
+        else if (node1 && set2) {
+          for (let i in set2.concepts) {
+            let setNode = this.nodes.find(node => node.id == set2.concepts[i].id)
+            node1.adjacents.push(setNode.id)
+            node1.adjacentCount += 1
+          }
+        }
+        else if (node2 && set1) {
+          for (let i in set1.concepts) {
+            let setNode = this.nodes.find(node => node.id == set1.concepts[i].id)
+            setNode.adjacents.push(node2.id)
+            setNode.adjacentCount += 1
+          }
+        }
       })
 
       let traversingNodes = [... this.nodes].sort((node1, node2) => node1.adjacentCount - node2.adjacentCount)
@@ -368,8 +388,8 @@ export default {
           if (placedNodes.some(node => vm.incest(adjacentNodes[i], adjacentNodes).includes(node))) {
             carry += 2
           }
-          adjacentNodes[i].x = node.x + 2 + Math.floor(node.text.length/5) + carry
-          adjacentNodes[i].y = node.y - i*2
+          adjacentNodes[i].x = node.x + 2 + Math.floor(node.text.length/5) + carry + col
+          adjacentNodes[i].y = node.y - i*2 + row
 
           placedNodes.push(adjacentNodes[i])
 
@@ -394,6 +414,7 @@ export default {
         adjacentNodes = adjacentNodes.sort((node1, node2) => this.incest(node2, adjacentNodes).length - this.incest(node1, adjacentNodes).length)
 
         drawSubgraph(currentNode, adjacentNodes, this.nodes, this)
+        row += 2
       }
 
       const centroid = {
@@ -408,17 +429,51 @@ export default {
       this.treeNode.edges.forEach(edge => {
         const node1 = this.nodes.find(node => node.id === edge.from);
         const node2 = this.nodes.find(node => node.id === edge.to);
+        const set1 = this.sets.find(set => set.id === edge.from);
+        const set2 = this.sets.find(set => set.id === edge.to);
 
-        let width1 = (node1.text.length * Math.floor(6*(this.zoom/100))) + 10
-        let tiles1 = Math.ceil(width1/(this.baseTileSize*this.zoom/100))
+        if (set1 && !set2) {
+          for (let i in set1.concepts) {
+            let setNode = this.nodes.find(node => node.id === set1.concepts[i].id)
+            let width1 = (setNode.text.length * Math.floor(6*(this.zoom/100))) + 10
+            let tiles1 = Math.ceil(width1/(this.baseTileSize*this.zoom/100))
 
-        let width2 = (node2.text.length * Math.floor(6*(this.zoom/100))) + 10
-        let tiles2 = Math.ceil(width2/(this.baseTileSize*this.zoom/100))
+            let width2 = (node2.text.length * Math.floor(6*(this.zoom/100))) + 10
+            let tiles2 = Math.ceil(width2/(this.baseTileSize*this.zoom/100))
 
-        this.edges.push([
-          { x: node1.x, y: node1.y, width: tiles1 },
-          { x: node2.x, y: node2.y, width: tiles2 },
-        ]);
+            this.edges.push([
+              { x: setNode.x, y: setNode.y, width: tiles1 },
+              { x: node2.x, y: node2.y, width: tiles2 },
+            ]);
+          }
+        }
+        if (set2 && !set1) {
+          for (let i in set2.concepts) {
+            let setNode = this.nodes.find(node => node.id === set2.concepts[i].id)
+            let width1 = (node1.text.length * Math.floor(6*(this.zoom/100))) + 10
+            let tiles1 = Math.ceil(width1/(this.baseTileSize*this.zoom/100))
+
+            let width2 = (setNode.text.length * Math.floor(6*(this.zoom/100))) + 10
+            let tiles2 = Math.ceil(width2/(this.baseTileSize*this.zoom/100))
+
+            this.edges.push([
+              { x: node1.x, y: node1.y, width: tiles1 },
+              { x: setNode.x, y: setNode.y, width: tiles2 },
+            ]);
+          }
+        }
+        else {
+          let width1 = (node1.text.length * Math.floor(6*(this.zoom/100))) + 10
+          let tiles1 = Math.ceil(width1/(this.baseTileSize*this.zoom/100))
+
+          let width2 = (node2.text.length * Math.floor(6*(this.zoom/100))) + 10
+          let tiles2 = Math.ceil(width2/(this.baseTileSize*this.zoom/100))
+
+          this.edges.push([
+            { x: node1.x, y: node1.y, width: tiles1 },
+            { x: node2.x, y: node2.y, width: tiles2 },
+          ]);
+        }
       });
     }
   },
@@ -446,7 +501,9 @@ export default {
     treeNode: {
       handler() {
         this.positionNodes()
-        this.generateBoard()
+        setTimeout(()=>{
+          this.generateBoard();
+        })
       },
       deep: true,
     }
